@@ -17,7 +17,7 @@ using TShockAPI.DB;
 
 namespace InfiniteSigns
 {
-	[ApiVersion(1, 16)]
+	[ApiVersion(1, 22)]
 	public class InfiniteSigns : TerrariaPlugin
 	{
 		public IDbConnection Database;
@@ -209,7 +209,7 @@ namespace InfiniteSigns
 			}
 			SqlTableCreator sqlcreator = new SqlTableCreator(Database,
 				Database.GetSqlType() == SqlType.Sqlite ? (IQueryBuilder)new SqliteQueryCreator() : new MysqlQueryCreator());
-			sqlcreator.EnsureExists(new SqlTable("Signs",
+			sqlcreator.EnsureTableStructure(new SqlTable("Signs",
 				new SqlColumn("ID", MySqlDbType.Int32) { AutoIncrement = true, Primary = true },
 				new SqlColumn("X", MySqlDbType.Int32),
 				new SqlColumn("Y", MySqlDbType.Int32),
@@ -238,7 +238,7 @@ namespace InfiniteSigns
 			if (converted > 0)
 			{
 				TSPlayer.Server.SendSuccessMessage("[InfiniteSigns] Converted {0} sign{1}.", converted, converted == 1 ? "" : "s");
-				WorldFile.saveWorld();
+			    TShock.Utils.SaveWorld();
 			}
 		}
 
@@ -275,7 +275,7 @@ namespace InfiniteSigns
 							player.SendErrorMessage("This sign is protected.");
 							break;
 						}
-						Database.Query("UPDATE Signs SET Account = @0 WHERE ID = @1", player.UserAccountName, sign.ID);
+						Database.Query("UPDATE Signs SET Account = @0 WHERE ID = @1", player.User.Name, sign.ID);
 						player.SendInfoMessage("This sign is now protected.");
 						break;
 					case SignAction.SetPassword:
@@ -284,7 +284,7 @@ namespace InfiniteSigns
 							player.SendErrorMessage("This sign is not protected.");
 							break;
 						}
-						if (sign.Account != player.UserAccountName && !player.Group.HasPermission("infsigns.admin.editall"))
+						if (sign.Account != player.User.Name && !player.Group.HasPermission("infsigns.admin.editall"))
 						{
 							player.SendErrorMessage("This sign is not yours.");
 							break;
@@ -306,7 +306,7 @@ namespace InfiniteSigns
 							player.SendErrorMessage("This sign is not protected.");
 							break;
 						}
-						if (sign.Account != player.UserAccountName && !player.Group.HasPermission("infsigns.admin.editall"))
+						if (sign.Account != player.User.Name && !player.Group.HasPermission("infsigns.admin.editall"))
 						{
 							player.SendErrorMessage("This sign is not yours.");
 							break;
@@ -320,7 +320,7 @@ namespace InfiniteSigns
 							player.SendErrorMessage("This sign is not protected.");
 							break;
 						}
-						if (sign.Account != player.UserAccountName && !player.Group.HasPermission("infsigns.admin.editall"))
+						if (sign.Account != player.User.Name && !player.Group.HasPermission("infsigns.admin.editall"))
 						{
 							player.SendErrorMessage("This sign is not yours.");
 							break;
@@ -334,7 +334,7 @@ namespace InfiniteSigns
 							player.SendErrorMessage("This sign is not protected.");
 							break;
 						}
-						if (sign.Account != player.UserAccountName && !player.Group.HasPermission("infsigns.admin.editall"))
+						if (sign.Account != player.User.Name && !player.Group.HasPermission("infsigns.admin.editall"))
 						{
 							player.SendErrorMessage("This sign is not yours.");
 							break;
@@ -458,7 +458,7 @@ namespace InfiniteSigns
 			{
 				Console.WriteLine("IsRegion: {0}", sign.IsRegion);
 				bool isFree = String.IsNullOrEmpty(sign.Account);
-				bool isOwner = sign.Account == player.UserAccountName || player.Group.HasPermission("infsigns.admin.editall");
+				bool isOwner = sign.Account == player.User.Name || player.Group.HasPermission("infsigns.admin.editall");
 				bool isRegion = sign.IsRegion && TShock.Regions.CanBuild(x, y, player);
 				if (!isFree && !isOwner && !isRegion)
 				{
@@ -508,7 +508,7 @@ namespace InfiniteSigns
 		{
 			TSPlayer player = TShock.Players[plr];
 			Database.Query("INSERT INTO Signs (X, Y, Account, Text, WorldID) VALUES (@0, @1, @2, '', @3)",
-				x, y, (player.IsLoggedIn && player.Group.HasPermission("infsigns.sign.protect")) ? player.UserAccountName : null, Main.worldID);
+				x, y, (player.IsLoggedIn && player.Group.HasPermission("infsigns.sign.protect")) ? player.User.Name : null, Main.worldID);
 			Main.sign[999] = null;
 		}
 		bool TileValid(int x, int y)
@@ -533,7 +533,7 @@ namespace InfiniteSigns
 			}
 			if (sign != null)
 			{
-				if (sign.Account != TShock.Players[plr].UserAccountName && sign.Account != "" &&
+				if (sign.Account != TShock.Players[plr].User.Name && sign.Account != "" &&
 					!TShock.Players[plr].Group.HasPermission("infsigns.admin.editall"))
 				{
 					return false;
@@ -558,8 +558,8 @@ namespace InfiniteSigns
 					}
 					e.Player.SendSuccessMessage("Converted {0} sign{1}.", converted, converted == 1 ? "" : "s");
 					if (converted > 0)
-						WorldFile.saveWorld();
-				});
+                        TShock.Utils.SaveWorld();
+                });
 		}
 		void Deselect(CommandArgs e)
 		{
@@ -658,8 +658,8 @@ namespace InfiniteSigns
 
 				e.Player.SendSuccessMessage("Pruned {0} corrupted sign{1}.", corrupted, corrupted == 1 ? "" : "s");
 				if (corrupted + empty > 0)
-					WorldFile.saveWorld();
-			});
+                    TShock.Utils.SaveWorld();
+            });
 		}
 		void Public(CommandArgs e)
 		{
@@ -699,8 +699,8 @@ namespace InfiniteSigns
 				Database.Query("DELETE FROM Signs WHERE WorldID = @0", Main.worldID);
 				e.Player.SendSuccessMessage("Reverse converted {0} signs.", i);
 				if (i > 0)
-					WorldFile.saveWorld();
-			});
+                    TShock.Utils.SaveWorld();
+            });
 		}
 		void Unlock(CommandArgs e)
 		{

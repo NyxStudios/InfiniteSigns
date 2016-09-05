@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿
 using Terraria;
+using Terraria.ID;
 
 namespace InfiniteSigns
 {
@@ -10,7 +8,7 @@ namespace InfiniteSigns
 	{
 		public static bool IsSign(this Tile t)
 		{
-			return t.type == 55 || t.type == 85;
+			return t.type == TileID.Signs || t.type == TileID.Tombstones || t.type == TileID.AnnouncementBox;
 		}
 		public static bool IsSolid(this Tile t)
 		{

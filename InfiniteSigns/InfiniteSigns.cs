@@ -84,7 +84,7 @@ namespace InfiniteSigns
 									return;
 								}
 
-								if (type == TileID.Signs || type == TileID.Tombstones)
+								if (type == TileID.Signs || type == TileID.Tombstones || type == TileID.AnnouncementBox)
 								{
 									int style = reader.ReadInt16();
 									int alternate = reader.ReadByte();
@@ -622,7 +622,7 @@ namespace InfiniteSigns
 				{
 					for (int j = 0; j < Main.maxTilesY; j++)
 					{
-						if (Main.tile[i, j].type == TileID.Signs)
+						if (Main.tile[i, j].IsSign())
 						{
 							int x = i;
 							int y = j;
@@ -662,7 +662,7 @@ namespace InfiniteSigns
 					{
 						int x = reader.Get<int>("X");
 						int y = reader.Get<int>("Y");
-						if (Main.tile[x, y].type != TileID.Signs)
+						if (!Main.tile[x, y].IsSign())
 						{
 							corrupted++;
 							WorldGen.KillTile(x, y);

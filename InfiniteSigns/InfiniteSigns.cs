@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Threading.Tasks;
 using Mono.Data.Sqlite;
 using MySql.Data.MySqlClient;
@@ -43,7 +41,7 @@ namespace InfiniteSigns
 			: base(game)
 		{
 			for (int i = 0; i < 256; i++)
-				Infos[i] = new PlayerInfo() { Index = i };
+				Infos[i] = new PlayerInfo { Index = i };
 			Order = 1;
 		}
 
@@ -75,6 +73,36 @@ namespace InfiniteSigns
 				{
 					switch (e.MsgID)
 					{
+						case PacketTypes.PlaceObject:
+							{
+								int x = reader.ReadInt16();
+								int y = reader.ReadInt16();
+								short type = reader.ReadInt16();
+
+								if (x < 0 || y < 0 || x >= Main.maxTilesX || y >= Main.maxTilesY)
+								{
+									return;
+								}
+
+								if (type == TileID.Signs || type == TileID.Tombstones)
+								{
+									int style = reader.ReadInt16();
+									int alternate = reader.ReadByte();
+									int random = reader.ReadSByte();
+									int direction = reader.ReadBoolean() ? 1 : -1;
+
+									WorldGen.PlaceObject(x, y, type, false, style, alternate, random, direction);
+
+									if (Main.tile[x, y].frameY != 0)
+										y--;
+									if (Main.tile[x, y].frameX % 36 != 0)
+										x--;
+									
+									Task.Factory.StartNew(() => PlaceSign(x, y, e.Msg.whoAmI));
+									e.Handled = true;
+								}
+							}
+							break;
 						case PacketTypes.SignNew:
 							{
 								reader.ReadInt16();
@@ -108,20 +136,6 @@ namespace InfiniteSigns
 									if (Sign.Nearby(x, y))
 									{
 										Task.Factory.StartNew(() => KillSign(x, y, e.Msg.whoAmI));
-										e.Handled = true;
-									}
-								}
-								else if (action == 1 && (type == 55 || type == 85))
-								{
-									if (TShock.Regions.CanBuild(x, y, TShock.Players[e.Msg.whoAmI]))
-									{
-										WorldGen.PlaceSign(x, y, type);
-										NetMessage.SendData(17, -1, e.Msg.whoAmI, "", 1, x, y, type);
-										if (Main.tile[x, y].frameY != 0)
-											y--;
-										if (Main.tile[x, y].frameX % 36 != 0)
-											x--;
-										Task.Factory.StartNew(() => PlaceSign(x, y, e.Msg.whoAmI));
 										e.Handled = true;
 									}
 								}
@@ -348,15 +362,16 @@ namespace InfiniteSigns
 						sign.Text = sign.Text.Replace("\0", "");
 						using (var writer = new BinaryWriter(new MemoryStream()))
 						{
-							writer.Write((short)0);
-							writer.Write((byte)47);
-							writer.Write((short)(info.SignIndex ? 1 : 0));
+							writer.BaseStream.Position = 2L;
+							writer.Write((byte)PacketTypes.SignNew);
+							writer.Write((short)sign.ID);
 							writer.Write((short)x);
 							writer.Write((short)y);
 							writer.Write(sign.Text);
+							writer.Write((float)plr);
 
 							short length = (short)writer.BaseStream.Position;
-							writer.BaseStream.Position = 0;
+							writer.BaseStream.Position = 0L;
 							writer.Write(length);
 							player.SendRawData(((MemoryStream)writer.BaseStream).ToArray());
 						}
@@ -458,7 +473,7 @@ namespace InfiniteSigns
 			var player = TShock.Players[plr];
 			if (sign != null)
 			{
-				Console.WriteLine("IsRegion: {0}", sign.IsRegion);
+				//Console.WriteLine("IsRegion: {0}", sign.IsRegion);
 				bool isFree = String.IsNullOrEmpty(sign.Account);
 				bool isOwner = sign.Account == player.User.Name || player.Group.HasPermission("infsigns.admin.editall");
 				bool isRegion = sign.IsRegion && TShock.Regions.CanBuild(x, y, player);

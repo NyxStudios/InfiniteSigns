@@ -1,11 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace InfiniteSigns
+﻿namespace InfiniteSigns
 {
-	public class PlayerInfo
+    public class PlayerInfo
 	{
 		public SignAction Action;
 		public int Index;
